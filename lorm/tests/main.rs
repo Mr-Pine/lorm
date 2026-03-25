@@ -4,9 +4,12 @@ use fake::Fake;
 use fake::faker::internet::en::SafeEmail;
 use lorm::ToLOrm;
 use lorm::predicates::{Function, Having, Where};
+use sqlx::ConnectOptions;
 use sqlx::migrate::MigrateDatabase;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Executor, FromRow, Sqlite, SqlitePool};
 use std::ops::Add;
+use std::str::FromStr;
 use std::time::Duration;
 use tokio::fs;
 use tokio::time::{Instant, sleep_until};
@@ -78,7 +81,11 @@ pub async fn get_pool() -> Result<SqlitePool> {
         Sqlite::drop_database(&database_url).await?;
     }
     Sqlite::create_database(&database_url).await?;
-    let pool = SqlitePool::connect(&database_url).await?;
+    let pool = SqlitePoolOptions::new()
+        .connect_with(
+            SqliteConnectOptions::from_str(&database_url)?.log_statements(log::LevelFilter::Info),
+        )
+        .await?;
     let migration_path = fs::canonicalize("tests/resources/migrations").await?;
     let mut dir = fs::read_dir(migration_path).await?;
     while let Some(entry) = dir.next_entry().await? {
@@ -90,6 +97,7 @@ pub async fn get_pool() -> Result<SqlitePool> {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_user_does_not_exists() {
     let pool = get_pool().await.expect("Failed to create pool");
 
@@ -103,6 +111,7 @@ async fn test_user_does_not_exists() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_user_is_created() {
     let pool = get_pool().await.expect("Failed to create pool");
 
@@ -122,6 +131,7 @@ async fn test_user_is_created() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_user_is_updated() {
     let pool = get_pool().await.expect("Failed to create pool");
 
@@ -143,6 +153,7 @@ async fn test_user_is_updated() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_user_is_deleted() {
     let pool = get_pool().await.expect("Failed to create pool");
 
@@ -159,6 +170,7 @@ async fn test_user_is_deleted() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_user_are_listed() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_users(&pool, 10, None).await;
@@ -169,6 +181,7 @@ async fn test_user_are_listed() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_with_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_alt_users(&pool, 10).await;
@@ -182,6 +195,7 @@ async fn test_with_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_offset_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let users = create_users(&pool, 10, None).await;
@@ -213,6 +227,7 @@ async fn test_offset_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_group_by_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_users(&pool, 11, None).await;
@@ -233,6 +248,7 @@ async fn test_group_by_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_automatic_pk_and_ts_insertion_update_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
 
@@ -244,6 +260,7 @@ async fn test_automatic_pk_and_ts_insertion_update_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_where_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let users = create_alt_users(&pool, 10).await;
@@ -258,6 +275,7 @@ async fn test_where_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_between_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_alt_users(&pool, 10).await;
@@ -271,6 +289,7 @@ async fn test_between_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_like_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_alt_users(&pool, 11).await;
@@ -291,6 +310,7 @@ async fn test_like_is_working() {
 }
 
 #[tokio::test]
+#[test_log::test]
 async fn test_having_is_working() {
     let pool = get_pool().await.expect("Failed to create pool");
     let _ = create_alt_users(&pool, 10).await;
