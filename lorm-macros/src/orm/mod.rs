@@ -3,6 +3,7 @@ mod delete;
 mod save;
 mod select;
 mod with;
+pub mod column;
 
 use crate::models::OrmModel;
 use crate::utils::executor_type;

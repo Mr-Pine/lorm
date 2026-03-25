@@ -4,6 +4,7 @@ use syn::{DeriveInput, parse_macro_input};
 mod models;
 mod orm;
 mod utils;
+mod attributes;
 
 /// `#[derive(ToLOrm)]`
 /// generate methods for Object Relational Mapping.
